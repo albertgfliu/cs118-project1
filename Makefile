@@ -1,18 +1,24 @@
-CPP ?= g++
+CPP = g++
 
 DISTDIR = cs118-1-$(user)
 
-SOURCES = HttpRequest.cpp HttpResponse.cpp main.cpp
-OBJECTS = $(subst .cpp,.o,$(SOURCES))
+HTTPSOURCES = HttpRequest.cpp HttpResponse.cpp
+WEBSERVERSOURCES = web-server.cpp
+WEBCLIENTSOURCES = web-client.cpp
+SOURCES = $(HTTPSOURCES) $(WEBSERVERSOURCES) $(WEBCLIENTSOURCES)
+
+HTTPOBJECTS = $(subst .cpp,.o,$(HTTPSOURCES))
+WEBSERVEROBJECTS = $(subst .cpp,.o,$(WEBSERVERSOURCES))
+WEBCLIENTOBJECTS = $(subst .cpp,.o,$(WEBCLIENTSOURCES))
 
 DIST_SOURCES = \
 	$(SOURCES) \
 	Makefile
 
-all: web-server
+all: web-server web-client
 
-web-server: $(SOURCES)
-	$(CPP) -o $(SOURCES)
+web-server: $(WEBSERVERSOURCES) $(HTTPSOURCES)
+	$(CPP) $(WEBSERVERSOURCES) $(HTTPSOURCES) -o web-server
 
 dist: $(DISTDIR).tar.gz
 
@@ -22,6 +28,6 @@ $(DISTDIR).tar.gz: $(DIST_SOURCES)
 	mv $@.tmp $@
 
 clean:
-	rm -fr *.o *~ *.bak *.tar.gz core *.core *.tmp web-server $(DISTDIR)
+	rm -fr *.o *~ *.bak *.tar.gz core *.core *.tmp web-server web-client $(DISTDIR)
 
 .PHONY: all dist check clean
