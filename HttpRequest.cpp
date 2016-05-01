@@ -1,4 +1,6 @@
 #include <string>
+#include <string.h>
+#include <cstring>
 #include <iostream>
 #include "HttpRequest.h"
 
@@ -51,9 +53,37 @@ HttpRequest::encode()
 }
 
 int
-HttpRequest::decode()
+HttpRequest::decode(string bufstr)
 {
-	//return -1 if failure to decode, bad HttpRequest
+	char *workingstr = strdup(bufstr.c_str());
+	char *pch;
+	pch = strtok(workingstr, " ");
+	int i = 0;
+	while(pch != NULL){
+		printf("%s\n", pch);
+		string pchstr = string(pch);
+		switch(i){
+			case 0: //GET case
+				if(pchstr.compare("GET") == 0){
+					setMethod(pchstr);
+				}
+				else{
+					return -1; //400 Bad Request
+				}
+				break;
+			case 1: //url case
+				if(pchstr.compare("/") == 0){
+					return -2; //404 not found
+				}
+				setUrl(pchstr);
+				break;
+			case 2: //HTTP case
+				setHttpVersion(pchstr);
+				break;
+		}
+		pch = strtok(NULL, " ");
+		i++;
+	}
 	return 0;
 }
 

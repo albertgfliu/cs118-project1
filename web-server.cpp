@@ -39,32 +39,45 @@ childsig_handler(int i) {
 
 int
 serveHttpRequest(int sock) {
-  bool isEnd = false;
-  char buf[512] = {0};
-  std::stringstream ss;
+	char buf[1024] = {0};
+	memset(buf, '\0', sizeof(buf));
 
-  while (!isEnd) {
-    memset(buf, '\0', sizeof(buf));
+	string bufstr = "";
+	int bytes_read_prev_round = 0;
+	
+	//read entire HTTP message? problem is that read is blocking. need logic for scanning for /r/n/r/n
+	int bytes_read_this_round;
+	bytes_read_this_round = read(sock, buf, sizeof(buf));
+	if(bytes_read_this_round == -1){
+		cerr << "Error: Could not read from socket" << endl;
+		exit(1); 
+	}
 
-    if (read(sock, buf, 512) == -1) {
-      perror("recv");
-      return 5;
-    }
+	bufstr += string(buf, bytes_read_this_round);
 
-    ss << buf << std::endl;
-    std::cout << buf << std::endl;
+	if(bytes_read_this_round == 0){
+		cout << "Successfully grabbed?" << endl;
+	}
 
+	//bytes_read_prev_round = bytes_read_this_round;
+	//cout << bytes_read_this_round << endl;
 
-    if (write(sock, buf, 20) == -1) {
-      perror("send");
-      return 6;
-    }
+	cout << bufstr << endl;
 
-    if (ss.str() == "close\n")
-      break;
+	HttpRequest request;
+	request.decode(bufstr);
 
-    ss.str("");
-  }	
+	string requestedfilepath = request.getUrl();
+
+	// cout << "You wanted: " + requestedfilepath << endl;
+
+	//now get rid of the backslash in the requested file path, open it, and serve it as part of an httprequest
+
+	if (write(sock, buf, sizeof(buf)) == -1) {
+	  perror("send");
+	  return 6;
+	}
+	return 0;
 }
 
 int
@@ -113,6 +126,13 @@ main(int argc, char *argv[])
  		cerr << "Error: could not open socket" << endl;
  		exit(1);
  	}
+
+	// allow others to reuse the address, NECESSARY IN CASE OF SIGKILL
+	int yes = 1;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+		cerr << "Error: could not set socket option" << endl;
+		exit(1);
+	}
 
  	//bind address to socket
  	serveraddr.sin_family = AF_INET;

@@ -22,7 +22,7 @@ class HttpRequest
 		void setHost(std::string host);
 		void setHttpVersion(std::string httpversion);
 		std::string encode();
-		int decode();
+		int decode(std::string bufstr);
 
 		HttpRequest();
 };
