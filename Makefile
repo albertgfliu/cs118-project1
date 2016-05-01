@@ -1,5 +1,7 @@
 CPP = g++
 
+CPPFLAGS = -std=c++11
+
 DISTDIR = cs118-1-$(user)
 
 HTTPSOURCES = HttpRequest.cpp HttpResponse.cpp
@@ -18,7 +20,10 @@ DIST_SOURCES = \
 all: web-server web-client
 
 web-server: $(WEBSERVERSOURCES) $(HTTPSOURCES)
-	$(CPP) $(WEBSERVERSOURCES) $(HTTPSOURCES) -o web-server
+	$(CPP) $(CPPFLAGS) $(WEBSERVERSOURCES) $(HTTPSOURCES) -o web-server
+
+web-client: $(WEBCLIENTSOURCES) $(HTTPSOURCES)
+	$(CPP) $(CPPFLAGS) $(WEBCLIENTSOURCES) $(HTTPSOURCES) -o web-client
 
 dist: $(DISTDIR).tar.gz
 
@@ -29,5 +34,7 @@ $(DISTDIR).tar.gz: $(DIST_SOURCES)
 
 clean:
 	rm -fr *.o *~ *.bak *.tar.gz core *.core *.tmp web-server web-client $(DISTDIR)
+
+remake: clean all
 
 .PHONY: all dist check clean
