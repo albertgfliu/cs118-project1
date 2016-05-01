@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <error.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 /* C networking functionalities */
 #include <sys/types.h>
@@ -44,39 +46,120 @@ serveHttpRequest(int sock) {
 
 	string bufstr = "";
 	int bytes_read_prev_round = 0;
+	stringstream workingstream;
+	stringstream headerstream;
 	
 	//read entire HTTP message? problem is that read is blocking. need logic for scanning for /r/n/r/n
-	int bytes_read_this_round;
-	bytes_read_this_round = read(sock, buf, sizeof(buf));
-	if(bytes_read_this_round == -1){
+	int initial_bytes_read;
+	initial_bytes_read = read(sock, buf, sizeof(buf));
+	if(initial_bytes_read == -1){
 		cerr << "Error: Could not read from socket" << endl;
 		exit(1); 
 	}
 
-	bufstr += string(buf, bytes_read_this_round);
-
-	if(bytes_read_this_round == 0){
-		cout << "Successfully grabbed?" << endl;
-	}
-
-	//bytes_read_prev_round = bytes_read_this_round;
-	//cout << bytes_read_this_round << endl;
-
-	cout << bufstr << endl;
+	bufstr += string(buf, initial_bytes_read);
+	workingstream << bufstr;
+	string workingline;
 
 	HttpRequest request;
-	request.decode(bufstr);
+	HttpResponse response;
+	int headerline = 0;
+	bool hasHost = false;
+	bool gotEndOfHeader = false;
+	while (gotEndOfHeader == false){
+		while(!workingstream.eof()){
+			getline(workingstream, workingline);
+			if(headerline == 0){ //first line
+				int decodeerror = request.decodeFirstLine(workingline);
+				if(decodeerror < 0)
+					response.setStatusCode("400 Bad Request");
+
+				response.setHttpVersion(request.getHttpVersion());
+				// if(decodeerror == -2)
+				// 	response.setStatusCode("")
+			}
+			else if(workingline.find("Host: ") != -1){//has host line, so path is relative
+				//cout << "Did I ever get here?" << endl;
+				request.setHost(workingline.substr(string("Host: ").length()));
+				hasHost = true;
+			}
+			else if(workingline.compare("\r") == 0){//it's the empty line, header is done
+				gotEndOfHeader = true;
+				break;
+			}
+			headerline++;
+		}
+		if(gotEndOfHeader == false){
+			initial_bytes_read = read(sock, buf, sizeof(buf));
+		}
+		if(initial_bytes_read == -1){
+			cerr << "Error: Could not read from socket" << endl;
+			exit(1); 
+		}
+
+		bufstr += string(buf, initial_bytes_read);
+		workingstream << bufstr;
+	}
+
+	char writebuf[1024] = {0};
+	memset(writebuf, '\0', sizeof(writebuf));
+
+	cout << response.getStatusCode() << endl;
+
+	if((response.getStatusCode()).compare("") != 0){ //check if bad request
+		string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
+		char *write_str_buf = strdup(write_str.c_str());
+		cout << write_str << endl;
+		write(sock, write_str_buf, sizeof(write_str_buf));
+		cout << "Did we get stuck here?" << endl;
+		return 1;
+	}
 
 	string requestedfilepath = request.getUrl();
-
-	// cout << "You wanted: " + requestedfilepath << endl;
-
-	//now get rid of the backslash in the requested file path, open it, and serve it as part of an httprequest
-
-	if (write(sock, buf, sizeof(buf)) == -1) {
-	  perror("send");
-	  return 6;
+	if(hasHost == false){
+		//then parse the host out of the requested file path -_- sighs I'll get to this eventually
 	}
+	//once we are done parsing, the requestedfilepath is now relative
+
+
+	cout << "You wanted: " + requestedfilepath << endl;
+	string servicefilepath = filedir + requestedfilepath;
+	cout << "Serving you from my directory: " + servicefilepath << endl;
+
+	if(servicefilepath[servicefilepath.length()-1] == '/'){
+		servicefilepath += "index.html";
+	}
+
+	int fd;
+	fd = open(servicefilepath.c_str(), O_RDONLY);
+	cout << "er what the hell" << endl;
+	printf("%d\n", fd);
+	cout << "what happened here" << endl;
+	if(fd < 0){
+		response.setStatusCode("404 Not Found");
+		string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
+		cout << write_str << endl;
+		//printf("%s\n", write_str.c_str());
+		char *write_str_buf = strdup(write_str.c_str());
+		write(sock, write_str_buf, write_str.length());
+		return 1;
+	}
+
+	//FILE IS OPEN, NOW START WRITING!!!
+	response.setStatusCode("200 OK");
+	string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
+	cout << write_str << endl;
+	char *write_str_buf = strdup(write_str.c_str());
+	cout << "what about here?" << endl;
+	write(sock, write_str_buf, write_str.length());
+	cout << "or am I stuck here maybe?" << endl;
+	int bytesread;
+	while((bytesread = read(fd, writebuf, sizeof(writebuf))) != 0){
+		cout << "am I stuck here?" << endl;
+		write(sock, writebuf, bytesread);
+	}
+	close(fd);
+
 	return 0;
 }
 

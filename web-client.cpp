@@ -107,9 +107,9 @@ main(int argc, char *argv[])
 		cout << "Connecting from: " << ipstr << ":" <<
 		ntohs(clientAddr.sin_port) << std::endl;
 
-		std::string input;
+		string input;
 		char buf[1024] = {0};
-		std::stringstream ss;
+		stringstream ss;
 
 
 		memset(buf, '\0', sizeof(buf));
@@ -171,9 +171,11 @@ main(int argc, char *argv[])
 		ss << bufstr;
 		fstream fs;
 		bool onBody = false;
-		while(!ss.eof()){
+		while(!ss.eof()){ //UPDATE THIS TO TOKENIZE
 			getline(ss, workingline);
 			//workingline.erase(std::remove(workingline.begin(), workingline.end(), '\r'), workingline.end());
+
+			cout << workingline << endl;
 
 			if(headerlinecount == 0){
 				if(workingline.find(notfoundstr) != -1){

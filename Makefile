@@ -2,12 +2,15 @@ CPP = g++
 
 CPPFLAGS = -std=c++11
 
-DISTDIR = cs118-1-$(user)
+USERID = 904167727
+
+DISTDIR = $(USERID)
 
 HTTPSOURCES = HttpRequest.cpp HttpResponse.cpp
+HTTPHEADERS = HttpRequest.h HttpResponse.h
 WEBSERVERSOURCES = web-server.cpp
 WEBCLIENTSOURCES = web-client.cpp
-SOURCES = $(HTTPSOURCES) $(WEBSERVERSOURCES) $(WEBCLIENTSOURCES)
+SOURCES = $(HTTPHEADERS) $(HTTPSOURCES) $(WEBSERVERSOURCES) $(WEBCLIENTSOURCES)
 
 HTTPOBJECTS = $(subst .cpp,.o,$(HTTPSOURCES))
 WEBSERVEROBJECTS = $(subst .cpp,.o,$(WEBSERVERSOURCES))
@@ -17,17 +20,18 @@ DIST_SOURCES = \
 	$(SOURCES) \
 	Makefile
 
+
 all: web-server web-client
 
-web-server: $(WEBSERVERSOURCES) $(HTTPSOURCES)
+web-server: $(WEBSERVERSOURCES) $(HTTPSOURCES) $(HTTPHEADERS)
 	$(CPP) $(CPPFLAGS) $(WEBSERVERSOURCES) $(HTTPSOURCES) -o web-server
 
-web-client: $(WEBCLIENTSOURCES) $(HTTPSOURCES)
+web-client: $(WEBCLIENTSOURCES) $(HTTPSOURCES) $(HTTPHEADERS)
 	$(CPP) $(CPPFLAGS) $(WEBCLIENTSOURCES) $(HTTPSOURCES) -o web-client
 
-dist: $(DISTDIR).tar.gz
+tarball: $(USERID).tar.gz
 
-$(DISTDIR).tar.gz: $(DIST_SOURCES) 
+$(USERID).tar.gz: $(DIST_SOURCES) 
 	rm -fr $(DISTDIR)
 	tar -czf $@.tmp --transform='s,^,$(DISTDIR)/,' $(DIST_SOURCES)
 	mv $@.tmp $@

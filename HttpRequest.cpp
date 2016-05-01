@@ -36,6 +36,12 @@ HttpRequest::setHost(string host)
 	m_host = host;
 }
 
+string
+HttpRequest::getHost(void)
+{
+	return m_host;
+}
+
 void
 HttpRequest::setHttpVersion(string httpversion)
 {
@@ -43,25 +49,33 @@ HttpRequest::setHttpVersion(string httpversion)
 }
 
 string
+HttpRequest::getHttpVersion(void)
+{
+	return m_httpversion;
+}
+
+string
 HttpRequest::encode()
 {
 	string s;
 	s = m_method + " " + m_url + " " + m_httpversion + "\r\n";
+	s += "Host: " + m_host + "\r\n";
 	s += "\r\n";
 	cout << s << endl;
 	return s;
 }
 
 int
-HttpRequest::decode(string bufstr)
+HttpRequest::decodeFirstLine(string firstline)
 {
-	char *workingstr = strdup(bufstr.c_str());
+	char *workingstr = strdup(firstline.c_str());
 	char *pch;
 	pch = strtok(workingstr, " ");
 	int i = 0;
 	while(pch != NULL){
 		printf("%s\n", pch);
 		string pchstr = string(pch);
+		cout << pchstr << endl;
 		switch(i){
 			case 0: //GET case
 				if(pchstr.compare("GET") == 0){
@@ -72,13 +86,12 @@ HttpRequest::decode(string bufstr)
 				}
 				break;
 			case 1: //url case
-				if(pchstr.compare("/") == 0){
-					return -2; //404 not found
-				}
 				setUrl(pchstr);
 				break;
 			case 2: //HTTP case
-				setHttpVersion(pchstr);
+				if(pchstr.compare("HTTP/1.0") == 0){
+					setHttpVersion(pchstr);
+				}
 				break;
 		}
 		pch = strtok(NULL, " ");
