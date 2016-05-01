@@ -8,9 +8,12 @@
 #include <unistd.h>
 #include <netdb.h>
 
+#include <algorithm>
+
 #include <iostream>
 #include <sstream>
 #include <cstdio>
+#include <fstream>
 
 #include "HttpRequest.h"
 #include "HttpResponse.h"
@@ -24,9 +27,6 @@ main(int argc, char *argv[])
 		printf("Usage: web-client [URL] [URL]...\n");
 		exit(1);
 	}
-	// create a socket using TCP IP
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
 	// struct sockaddr_in addr;
 	// addr.sin_family = AF_INET;
 	// addr.sin_port = htons(40001);     // short, network byte order
@@ -37,14 +37,20 @@ main(int argc, char *argv[])
 	//   return 1;
 	// }
 
-	struct sockaddr_in serverAddr;
 
 	//go through each one of the URLs and decode it
 	for(int i = 1; i < argc; i++) {
+
+		// create a socket using TCP IP
+		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+		struct sockaddr_in serverAddr;
+
+
 		HttpRequest request;
 		string website = string(argv[i]);
 		website = website.substr(7); //parse out the http:// portion, this is guaranteed to us
-		cout << website << endl;
+		//cout << website << endl;
 		int slashpos = website.find("/");
 		string host;
 		if(slashpos < 0){
@@ -53,8 +59,8 @@ main(int argc, char *argv[])
 			request.setHost(website);
 		}
 		else{
-			cout << "/" + website.substr(slashpos+1) << endl;
-			cout << website.substr(0, slashpos) << endl;
+			//cout << "/" + website.substr(slashpos+1) << endl;
+			//cout << website.substr(0, slashpos) << endl;
 			request.setUrl("/" + website.substr(slashpos+1));
 			host = website.substr(0,slashpos);
 			request.setHost(host);
@@ -69,8 +75,7 @@ main(int argc, char *argv[])
 			port = host.substr(colonpos+1);
 			domain = host.substr(0, colonpos);	
 		}
-		cout << "Port: " + port << endl;
-		cout << "Domain: " + domain << endl;
+		cout << "Connecting to Domain: " + domain + " Port: " + port << endl;
 		struct hostent *hp = gethostbyname(domain.c_str());
 
 		string internet_address = inet_ntoa(*( struct in_addr*)(hp -> h_addr_list[0]));
@@ -99,7 +104,7 @@ main(int argc, char *argv[])
 
 		char ipstr[INET_ADDRSTRLEN] = {'\0'};
 		inet_ntop(clientAddr.sin_family, &clientAddr.sin_addr, ipstr, sizeof(ipstr));
-		cout << "Set up a connection from: " << ipstr << ":" <<
+		cout << "Connecting from: " << ipstr << ":" <<
 		ntohs(clientAddr.sin_port) << std::endl;
 
 		std::string input;
@@ -132,16 +137,18 @@ main(int argc, char *argv[])
 		if(filename.compare("") == 0){
 			filename = "index.html";
 		}
-		cout << filename << endl;
+		//cout << filename << endl;
 
-
-		FILE *fp;
-		printf("%s\n", ("./" + filename).c_str());
-		fp = fopen(("./" + filename).c_str(),"w+");
-		string workingstr = "";
+		string bufstr = "";
 
 		int bytes_read_prev_round = 0;
-		while(1){
+
+		/*String searches*/
+		string notfoundstr = "404 Not Found";
+		string badrequeststr = "400 Bad Request";
+		string okstr = "200 OK";
+
+		while(1){ //read entire HTTP message
 			int bytes_read_this_round;
 			bytes_read_this_round = read(sockfd, buf, sizeof(buf));
 			if(bytes_read_this_round == -1){
@@ -149,29 +156,64 @@ main(int argc, char *argv[])
 				exit(1); 
 			}
 
-			workingstr = string(buf, bytes_read_this_round);
-			ss << workingstr << endl;
-			cout << workingstr << endl;
+			bufstr += string(buf, bytes_read_this_round);
 
-			// char testbuf[1024] = {0};
-			// ss.getline(testbuf, 1024);
-			// cout << string(testbuf) << endl;
-
-			//   perror("recv");
-			//   return 5;
-
-			// if (ss.str() == "close\n")
-			//   break;
-
-			// ss.str("");
 			if(bytes_read_this_round == 0){
-				cout << "we're done here" << endl;
+				cout << "Successfully grabbed?" << endl;
 				break;
 			}
 			bytes_read_prev_round = bytes_read_this_round;
 		}
-		// fclose(fp);
+
+		//begin parsing http message stored in bufstr?
+		string workingline;
+		int headerlinecount = 0;
+		ss << bufstr;
+		fstream fs;
+		bool onBody = false;
+		while(!ss.eof()){
+			getline(ss, workingline);
+			//workingline.erase(std::remove(workingline.begin(), workingline.end(), '\r'), workingline.end());
+
+			if(headerlinecount == 0){
+				if(workingline.find(notfoundstr) != -1){
+					cerr << "Error: 404 Not Found" << endl;
+					goto NEXTURL;
+				}
+				else if(workingline.find(badrequeststr) != -1){
+					cerr << "Error: 400 Bad Request" << endl;
+					goto NEXTURL;
+				}
+				else if(workingline.find(okstr) != -1){
+					cout << "200 OK" << endl;
+					headerlinecount++;
+					continue;
+				}
+				else { //none of the three desired codes were found
+					cerr << "Error: Bad Response Message" << endl;
+					goto NEXTURL;
+				}
+			}
+			else { //currently parsing rest of the header
+				if(workingline.compare("\r") == 0) { //if it's the empty line
+					onBody = true;
+					break;
+				}
+				cout << workingline << endl;
+			}
+		}
+		if(onBody == false) {//somehow reached end of header without ever getting to the body
+			cerr << "Error: Bad Response Message, missing body" << endl;
+		}
+
+		fs.open(("./" + filename).c_str(), fstream::out);
+		fs << ss.rdbuf();
+		fs.close();
+		
+		NEXTURL:
 		close(sockfd);
+
+		cout << "Finished processing " + string(argv[i]) << endl;
 
 	}
 
