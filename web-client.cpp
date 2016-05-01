@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <cstdio>
 
 #include "HttpRequest.h"
 #include "HttpResponse.h"
@@ -121,7 +122,25 @@ main(int argc, char *argv[])
 		//   return 4;
 		// }
 
+		string filename = request.getUrl();
+		if(filename.find("/") == 0){
+			filename = filename.substr(filename.find("/")+1);
+		}
+		while((int)filename.find("/") > 0){
+			filename = filename.substr(filename.find("/")+1);
+		}
+		if(filename.compare("") == 0){
+			filename = "index.html";
+		}
+		cout << filename << endl;
+
+
+		FILE *fp;
+		printf("%s\n", ("./" + filename).c_str());
+		fp = fopen(("./" + filename).c_str(),"w+");
 		string workingstr = "";
+
+		int bytes_read_prev_round = 0;
 		while(1){
 			int bytes_read_this_round;
 			bytes_read_this_round = read(sockfd, buf, sizeof(buf));
@@ -129,8 +148,10 @@ main(int argc, char *argv[])
 				cerr << "Error: Could not read from socket" << endl;
 				exit(1); 
 			}
-			ss << buf << std::endl;
-			// std::cout << buf << std::endl;
+
+			workingstr = string(buf, bytes_read_this_round);
+			ss << workingstr << endl;
+			cout << workingstr << endl;
 
 			// char testbuf[1024] = {0};
 			// ss.getline(testbuf, 1024);
@@ -143,9 +164,13 @@ main(int argc, char *argv[])
 			//   break;
 
 			// ss.str("");
-
+			if(bytes_read_this_round == 0){
+				cout << "we're done here" << endl;
+				break;
+			}
+			bytes_read_prev_round = bytes_read_this_round;
 		}
-
+		// fclose(fp);
 		close(sockfd);
 
 	}

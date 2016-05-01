@@ -16,11 +16,13 @@ class HttpRequest
 		std::vector<uint8_t> wire;
 	public:
 		void setUrl(std::string url);
+		std::string getUrl(void);
 		void setMethod(std::string method);
 		void setContentLength(std::string contentlength);
 		void setHost(std::string host);
 		void setHttpVersion(std::string httpversion);
 		std::string encode();
+		int decode();
 
 		HttpRequest();
 };

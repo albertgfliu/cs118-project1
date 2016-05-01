@@ -10,6 +10,12 @@ HttpRequest::setUrl(string url)
 	m_url = url;
 }
 
+string
+HttpRequest::getUrl(void)
+{
+	return m_url;
+}
+
 void
 HttpRequest::setMethod(string method)
 {
@@ -44,6 +50,12 @@ HttpRequest::encode()
 	return s;
 }
 
+int
+HttpRequest::decode()
+{
+	//return -1 if failure to decode, bad HttpRequest
+	return 0;
+}
 
 HttpRequest::HttpRequest(void)
 {
