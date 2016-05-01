@@ -1,4 +1,5 @@
 #include <string>
+#include <iostream>
 #include "HttpRequest.h"
 
 using namespace std;
@@ -27,6 +28,25 @@ HttpRequest::setHost(string host)
 	m_host = host;
 }
 
+void
+HttpRequest::setHttpVersion(string httpversion)
+{
+	m_httpversion = httpversion;
+}
+
+string
+HttpRequest::encode()
+{
+	string s;
+	s = m_method + " " + m_url + " " + m_httpversion + "\r\n";
+	s += "\r\n";
+	cout << s << endl;
+	return s;
+}
+
+
 HttpRequest::HttpRequest(void)
 {
+	m_method = "GET";
+	m_httpversion = "HTTP/1.0";
 }

@@ -18,6 +18,7 @@
 /* C++ functionalities */
 #include <string>
 #include <iostream>
+#include <sstream>
 
 /* User-defined functionalities */
 #include "HttpRequest.h"
@@ -35,9 +36,35 @@ childsig_handler(int i) {
 		continue;
 }
 
-void 
-serveHttpRequest(int sock) {
 
+int
+serveHttpRequest(int sock) {
+  bool isEnd = false;
+  char buf[512] = {0};
+  std::stringstream ss;
+
+  while (!isEnd) {
+    memset(buf, '\0', sizeof(buf));
+
+    if (read(sock, buf, 512) == -1) {
+      perror("recv");
+      return 5;
+    }
+
+    ss << buf << std::endl;
+    std::cout << buf << std::endl;
+
+
+    if (write(sock, buf, 20) == -1) {
+      perror("send");
+      return 6;
+    }
+
+    if (ss.str() == "close\n")
+      break;
+
+    ss.str("");
+  }	
 }
 
 int
