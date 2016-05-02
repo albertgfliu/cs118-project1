@@ -108,7 +108,7 @@ main(int argc, char *argv[])
 		ntohs(clientAddr.sin_port) << std::endl;
 
 		string input;
-		char buf[1024] = {0};
+		char buf[10240] = {0};
 		stringstream ss;
 
 
@@ -148,27 +148,19 @@ main(int argc, char *argv[])
 		string badrequeststr = "400 Bad Request";
 		string okstr = "200 OK";
 
-		while(1){ //read entire HTTP message
-			int bytes_read_this_round;
-			bytes_read_this_round = read(sockfd, buf, sizeof(buf));
-			if(bytes_read_this_round == -1){
-				cerr << "Error: Could not read from socket" << endl;
-				exit(1); 
-			}
-
-			bufstr += string(buf, bytes_read_this_round);
-
-			if(bytes_read_this_round == 0){
-				cout << "Successfully grabbed?" << endl;
-				break;
-			}
-			bytes_read_prev_round = bytes_read_this_round;
+		//just read the header for now
+		int bytes_read;
+		bytes_read = read(sockfd, buf, sizeof(buf));
+		if(bytes_read == -1){
+			cerr << "Error: Could not read from socket" << endl;
+			exit(1);
 		}
+		bufstr += string(buf, bytes_read);
+		ss << bufstr;
 
 		//begin parsing http message stored in bufstr?
 		string workingline;
 		int headerlinecount = 0;
-		ss << bufstr;
 		fstream fs;
 		bool onBody = false;
 		while(!ss.eof()){ //UPDATE THIS TO TOKENIZE
@@ -206,10 +198,27 @@ main(int argc, char *argv[])
 		}
 		if(onBody == false) {//somehow reached end of header without ever getting to the body
 			cerr << "Error: Bad Response Message, missing body" << endl;
+			goto NEXTURL;
 		}
 
 		fs.open(("./" + filename).c_str(), fstream::out);
-		fs << ss.rdbuf();
+		fs << ss.rdbuf(); //dump the rest of SS in for now
+
+		while(1){
+			int bytes_read_this_round;
+			bytes_read_this_round = read(sockfd, buf, sizeof(buf));
+			if(bytes_read_this_round == -1){
+				cerr << "Error: Could not read from socket" << endl;
+				exit(1); 
+			}
+			ss << string(buf, bytes_read_this_round);
+			if(bytes_read_this_round == 0){
+				cout << "Successfully got desired file" << endl;
+				break;
+			}
+			fs << ss.rdbuf(); //dump ss in every time
+		}
+
 		fs.close();
 		
 		NEXTURL:

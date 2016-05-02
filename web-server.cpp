@@ -111,16 +111,14 @@ serveHttpRequest(int sock) {
 		char *write_str_buf = strdup(write_str.c_str());
 		cout << write_str << endl;
 		write(sock, write_str_buf, sizeof(write_str_buf));
-		cout << "Did we get stuck here?" << endl;
 		return 1;
 	}
 
 	string requestedfilepath = request.getUrl();
 	if(hasHost == false){
-		//then parse the host out of the requested file path -_- sighs I'll get to this eventually
+		int slashpos = requestedfilepath.find("/");
+		requestedfilepath = requestedfilepath.substr(slashpos);
 	}
-	//once we are done parsing, the requestedfilepath is now relative
-
 
 	cout << "You wanted: " + requestedfilepath << endl;
 	string servicefilepath = filedir + requestedfilepath;
@@ -132,9 +130,7 @@ serveHttpRequest(int sock) {
 
 	int fd;
 	fd = open(servicefilepath.c_str(), O_RDONLY);
-	cout << "er what the hell" << endl;
 	printf("%d\n", fd);
-	cout << "what happened here" << endl;
 	if(fd < 0){
 		response.setStatusCode("404 Not Found");
 		string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
@@ -150,12 +146,9 @@ serveHttpRequest(int sock) {
 	string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
 	cout << write_str << endl;
 	char *write_str_buf = strdup(write_str.c_str());
-	cout << "what about here?" << endl;
 	write(sock, write_str_buf, write_str.length());
-	cout << "or am I stuck here maybe?" << endl;
 	int bytesread;
 	while((bytesread = read(fd, writebuf, sizeof(writebuf))) != 0){
-		cout << "am I stuck here?" << endl;
 		write(sock, writebuf, bytesread);
 	}
 	close(fd);

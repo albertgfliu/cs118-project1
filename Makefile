@@ -6,6 +6,7 @@ USERID = 904167727
 
 DISTDIR = $(USERID)
 
+REPORT = report.pdf
 HTTPSOURCES = HttpRequest.cpp HttpResponse.cpp
 HTTPHEADERS = HttpRequest.h HttpResponse.h
 WEBSERVERSOURCES = web-server.cpp
@@ -17,6 +18,7 @@ WEBSERVEROBJECTS = $(subst .cpp,.o,$(WEBSERVERSOURCES))
 WEBCLIENTOBJECTS = $(subst .cpp,.o,$(WEBCLIENTSOURCES))
 
 DIST_SOURCES = \
+	$(REPORT) \
 	$(SOURCES) \
 	Makefile
 
