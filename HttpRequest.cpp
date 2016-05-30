@@ -73,9 +73,9 @@ HttpRequest::decodeFirstLine(string firstline)
 	pch = strtok(workingstr, " ");
 	int i = 0;
 	while(pch != NULL){
-		printf("%s\n", pch);
+		//printf("%s\n", pch);
 		string pchstr = string(pch);
-		cout << pchstr << endl;
+		//cout << pchstr << endl;
 		switch(i){
 			case 0: //GET case
 				if(pchstr.compare("GET") == 0){

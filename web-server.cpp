@@ -104,12 +104,10 @@ serveHttpRequest(int sock) {
 	char writebuf[1024] = {0};
 	memset(writebuf, '\0', sizeof(writebuf));
 
-	cout << response.getStatusCode() << endl;
 
 	if((response.getStatusCode()).compare("") != 0){ //check if bad request
 		string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
 		char *write_str_buf = strdup(write_str.c_str());
-		cout << write_str << endl;
 		write(sock, write_str_buf, sizeof(write_str_buf));
 		return 1;
 	}
@@ -130,11 +128,11 @@ serveHttpRequest(int sock) {
 
 	int fd;
 	fd = open(servicefilepath.c_str(), O_RDONLY);
-	printf("%d\n", fd);
+	//printf("%d\n", fd);
 	if(fd < 0){
 		response.setStatusCode("404 Not Found");
 		string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
-		cout << write_str << endl;
+		//cout << write_str << endl;
 		//printf("%s\n", write_str.c_str());
 		char *write_str_buf = strdup(write_str.c_str());
 		write(sock, write_str_buf, write_str.length());
@@ -144,7 +142,7 @@ serveHttpRequest(int sock) {
 	//FILE IS OPEN, NOW START WRITING!!!
 	response.setStatusCode("200 OK");
 	string write_str = response.getHttpVersion() + " " + response.getStatusCode() + "\r\n\r\n";
-	cout << write_str << endl;
+	//cout << write_str << endl;
 	char *write_str_buf = strdup(write_str.c_str());
 	write(sock, write_str_buf, write_str.length());
 	int bytesread;
